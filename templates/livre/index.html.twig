@@ -1,7 +1,30 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Hello LivreController!{% endblock %}
-
 {% block body %}
+
+<h1>Liste des livres</h1>
+
+<a href="{{ path('livre_new') }}">➕ Ajouter</a>
+
+<table border="1">
+    <tr>
+        <th>Titre</th>
+        <th>Auteur</th>
+        <th>Disponible</th>
+        <th>Actions</th>
+    </tr>
+
+    {% for livre in livres %}
+        <tr>
+            <td>{{ livre.titre }}</td>
+            <td>{{ livre.auteur }}</td>
+            <td>{{ livre.disponible ? 'Oui' : 'Non' }}</td>
+            <td>
+                <a href="{{ path('livre_show', {id: livre.id}) }}">Voir</a>
+                <a href="{{ path('livre_edit', {id: livre.id}) }}">Modifier</a>
+            </td>
+        </tr>
+    {% endfor %}
+</table>
 
 {% endblock %}

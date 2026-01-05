@@ -1,0 +1,13 @@
+{% extends 'base.html.twig' %}
+
+<h2>{{ livre.titre }}</h2>
+
+<p><b>Auteur :</b> {{ livre.auteur }}</p>
+<p><b>Année :</b> {{ livre.anneePublication }}</p>
+<p><b>Résumé :</b> {{ livre.resume }}</p>
+<p><b>Disponible :</b> {{ livre.disponible ? 'Oui' : 'Non' }}</p>
+
+<form method="post" action="{{ path('livre_delete', {id: livre.id}) }}">
+    <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ livre.id) }}">
+    <button>Supprimer</button>
+</form>
