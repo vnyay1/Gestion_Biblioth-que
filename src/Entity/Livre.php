@@ -5,8 +5,10 @@ namespace App\Entity;
 use App\Repository\LivreRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: LivreRepository::class)]
+#[ORM\HasLifecycleCallbacks]
 class Livre
 {
     #[ORM\Id]
@@ -15,23 +17,47 @@ class Livre
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
+    #[Assert\NotBlank(message: "Le titre est obligatoire")]
+    #[Assert\Length(
+        min: 2,
+        max: 255,
+        minMessage: "Le titre doit contenir au moins {{ limit }} caractères",
+        maxMessage: "Le titre ne peut pas dépasser {{ limit }} caractères"
+    )]
     private ?string $titre = null;
 
     #[ORM\Column]
+    #[Assert\NotNull(message: "L'année de publication est obligatoire")]
+    #[Assert\Range(
+        min: 1000,
+        max: 2100,
+        notInRangeMessage: "L'année doit être entre {{ min }} et {{ max }}"
+    )]
     private ?int $annePublication = null;
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
+    #[Assert\Length(
+        max: 5000,
+        maxMessage: "Le résumé ne peut pas dépasser {{ limit }} caractères"
+    )]
     private ?string $resume = null;
 
     #[ORM\Column]
-    private ?bool $disponible = null;
+    private ?bool $disponible = true;
 
-    #[ORM\Column]
-    private ?\DateTime $dateAjout = null;
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
+    private ?\DateTimeImmutable $dateAjout = null;
 
-    #[ORM\ManyToOne]
+    #[ORM\ManyToOne(inversedBy: 'livres')]
     #[ORM\JoinColumn(nullable: false)]
+    #[Assert\NotNull(message: "L'auteur est obligatoire")]
     private ?Auteur $auteur = null;
+
+    public function __construct()
+    {
+        $this->disponible = true;
+        $this->dateAjout = new \DateTimeImmutable();
+    }
 
     public function getId(): ?int
     {
@@ -46,7 +72,6 @@ class Livre
     public function setTitre(string $titre): static
     {
         $this->titre = $titre;
-
         return $this;
     }
 
@@ -58,7 +83,6 @@ class Livre
     public function setAnnePublication(int $annePublication): static
     {
         $this->annePublication = $annePublication;
-
         return $this;
     }
 
@@ -70,7 +94,6 @@ class Livre
     public function setResume(?string $resume): static
     {
         $this->resume = $resume;
-
         return $this;
     }
 
@@ -82,19 +105,17 @@ class Livre
     public function setDisponible(bool $disponible): static
     {
         $this->disponible = $disponible;
-
         return $this;
     }
 
-    public function getDateAjout(): ?\DateTime
+    public function getDateAjout(): ?\DateTimeImmutable
     {
         return $this->dateAjout;
     }
 
-    public function setDateAjout(\DateTime $dateAjout): static
+    public function setDateAjout(\DateTimeImmutable $dateAjout): static
     {
         $this->dateAjout = $dateAjout;
-
         return $this;
     }
 
@@ -106,7 +127,58 @@ class Livre
     public function setAuteur(?Auteur $auteur): static
     {
         $this->auteur = $auteur;
-
         return $this;
+    }
+
+    /**
+     * Méthode automatique avant la persistance
+     */
+    #[ORM\PrePersist]
+    public function setDateAjoutValue(): void
+    {
+        if ($this->dateAjout === null) {
+            $this->dateAjout = new \DateTimeImmutable();
+        }
+    }
+
+    /**
+     * Affichage du livre sous forme de chaîne
+     */
+    public function __toString(): string
+    {
+        return $this->titre ?? 'Nouveau livre';
+    }
+
+    /**
+     * Vérifie si le livre est récent (moins de 2 ans)
+     */
+    public function isRecent(): bool
+    {
+        $currentYear = (int) date('Y');
+        return ($currentYear - $this->annePublication) <= 2;
+    }
+
+    /**
+     * Retourne la date d'ajout formatée
+     */
+    public function getDateAjoutFormatted(string $format = 'd/m/Y'): string
+    {
+        return $this->dateAjout?->format($format) ?? '';
+    }
+
+    /**
+     * Marque le livre comme emprunté
+     */
+    public function emprunter(): void
+    {
+        $this->disponible = false;
+    }
+
+    /**
+     * Marque le livre comme retourné
+     */
+    public function retourner(): void
+    {
+        $this->disponible = true;
     }
 }

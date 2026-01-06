@@ -1,13 +1,74 @@
 {% extends 'base.html.twig' %}
 
-<h2>{{ livre.titre }}</h2>
+{% block title %}{{ livre.titre }}{% endblock %}
 
-<p><b>Auteur :</b> {{ livre.auteur }}</p>
-<p><b>Année :</b> {{ livre.anneePublication }}</p>
-<p><b>Résumé :</b> {{ livre.resume }}</p>
-<p><b>Disponible :</b> {{ livre.disponible ? 'Oui' : 'Non' }}</p>
+{% block body %}
+    <div class="container">
+        <h1>📖 {{ livre.titre }}</h1>
 
-<form method="post" action="{{ path('livre_delete', {id: livre.id}) }}">
-    <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ livre.id) }}">
-    <button>Supprimer</button>
-</form>
+        {% for type, messages in app.flashes %}
+            {% for message in messages %}
+                <div class="alert alert-{{ type }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endfor %}
+
+        <div class="livre-details">
+            <div class="detail-row">
+                <strong>Auteur :</strong> 
+                <span>{{ livre.auteur.nom ?? 'Non défini' }}</span>
+            </div>
+            
+            <div class="detail-row">
+                <strong>Année de publication :</strong> 
+                <span>{{ livre.annePublication }}</span>
+                {% if livre.isRecent() %}
+                    <span class="badge badge-new">Nouveau</span>
+                {% endif %}
+            </div>
+            
+            <div class="detail-row">
+                <strong>Résumé :</strong>
+                <p>{{ livre.resume ?? 'Aucun résumé disponible.' }}</p>
+            </div>
+            
+            <div class="detail-row">
+                <strong>Disponibilité :</strong>
+                {% if livre.disponible %}
+                    <span class="badge badge-success">✅ Disponible</span>
+                {% else %}
+                    <span class="badge badge-danger">❌ Emprunté</span>
+                {% endif %}
+            </div>
+            
+            <div class="detail-row">
+                <strong>Date d'ajout :</strong> 
+                <span>{{ livre.dateAjoutFormatted('d/m/Y à H:i') }}</span>
+            </div>
+        </div>
+
+        <div class="actions">
+            <a href="{{ path('livre_edit', {id: livre.id}) }}" class="btn btn-warning">✏️ Modifier</a>
+            
+            {% if livre.disponible %}
+                <form method="post" action="{{ path('livre_emprunter', {id: livre.id}) }}" style="display: inline;">
+                    <input type="hidden" name="_token" value="{{ csrf_token('emprunter' ~ livre.id) }}">
+                    <button type="submit" class="btn btn-primary">📤 Emprunter</button>
+                </form>
+            {% else %}
+                <form method="post" action="{{ path('livre_retourner', {id: livre.id}) }}" style="display: inline;">
+                    <input type="hidden" name="_token" value="{{ csrf_token('retourner' ~ livre.id) }}">
+                    <button type="submit" class="btn btn-success">📥 Retourner</button>
+                </form>
+            {% endif %}
+
+            <form method="post" action="{{ path('livre_delete', {id: livre.id}) }}" style="display: inline;" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer ce livre ?');">
+                <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ livre.id) }}">
+                <button type="submit" class="btn btn-danger">🗑️ Supprimer</button>
+            </form>
+
+            <a href="{{ path('livre_index') }}" class="btn btn-secondary">🔙 Retour à la liste</a>
+        </div>
+    </div>
+{% endblock %}
